@@ -1,0 +1,33 @@
+<!-- Reference HTML mirror of the Mushak-6.6 certificate layout.
+     The authoritative renderer is services/pdf_renderer.py (ReportLab).
+     Tokens: {{issuer_name}} {{issuer_address}} {{issuer_bin}} {{certificate_no}}
+             {{issue_date}} {{rows}} {{total_incl}} {{total_vat}} {{signatory}} {{designation}} -->
+<div class="certificate">
+  <div class="head">
+    <div class="center">
+      <div>Government of the People's Republic of Bangladesh</div>
+      <div>National Board of Revenue</div>
+      <div>Withholding Tax Certificate</div>
+      <div>(See clause (Cha) of Sub-Rule (1) of Rule 40)</div>
+    </div>
+    <div class="right">Mushak-6.6</div>
+  </div>
+  <div class="issuer">
+    <div>Name of withholding entity : {{issuer_name}}</div>
+    <div>Address of withholding entity : {{issuer_address}}</div>
+    <div>BIN of withholding entity (if applicable) : {{issuer_bin}}</div>
+  </div>
+  <div class="cno">Certificate No: {{certificate_no}} &nbsp; Date of Issue: {{issue_date}}</div>
+  <p>This is to certify that VAT has been deducted at source ... in accordance with Section 49 of the Act.</p>
+  <table border="1">
+    <tr><th>SL NO</th><th>Supplier Name</th><th>BIN</th><th>Challan No</th><th>Date</th>
+        <th>Invoice No</th><th>Date</th><th>Total Value of Supply*</th><th>Amount of VAT</th><th>VAT withheld</th></tr>
+    {{rows}}
+    <tr><td colspan="7">Total</td><td>{{total_incl}}</td><td>{{total_vat}}</td><td></td></tr>
+  </table>
+  <div class="sig">
+    <div>Officer-in-Charge</div><div>Signature</div>
+    <div><b>{{signatory}}</b></div><div>{{designation}}</div>
+  </div>
+  <div class="footn">*Price inclusive of VAT and SD (if any).</div>
+</div>

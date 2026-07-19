@@ -1,0 +1,27 @@
+# Python
+venv/
+backend/venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment / secrets
+.env
+.env.local
+!.env.example
+!.env.local.example
+
+# Node / Next.js
+node_modules/
+frontend/.next/
+frontend/out/
+
+# App runtime data
+backend/data/uploads/*
+backend/data/certificates/*
+!backend/data/uploads/.keep
+!backend/data/certificates/.keep
+
+# OS / editor
+.DS_Store
+Thumbs.db
