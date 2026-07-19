@@ -17,6 +17,7 @@ HEADER_MAP = {
     "suppliers bin": "supplier_bin",
     "tax deposit serial no.": "treasury_challan_no",
     "tax deposit serial no": "treasury_challan_no",
+    "tax deposit serial no.of bank transfer": "treasury_challan_no",
     "tax deposit date": "treasury_deposit_date",
     "concerned invoiced number": "invoice_no",
     "concerned invoice number": "invoice_no",
@@ -60,15 +61,18 @@ def parse_summary(path: str, sheet_name: str = "Summary") -> list[dict]:
     wb = openpyxl.load_workbook(path, data_only=True)
     ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb[wb.sheetnames[-1]]
 
-    # find the header row (the one containing "Supplier" and "Deducted VAT")
-    header_row = None
+    # find the header row: the row whose cells match the most known column labels.
+    # (a loose substring search on "supplier"/"vat" would also match a title row like
+    # "Sub Form for Note 24 (VAT Deducted at Source from Suppliers)")
+    header_row, best_score = None, 0
     for r in range(1, min(ws.max_row, 10) + 1):
         vals = [_norm(c.value) for c in ws[r]]
-        if any("supplier" in v for v in vals) and any("vat" in v for v in vals):
-            header_row = r
-            break
-    if header_row is None:
-        raise ValueError("Could not locate the Summary header row (expected 'Supplier' and 'VAT').")
+        score = sum(1 for v in vals if v in HEADER_MAP)
+        if score > best_score:
+            header_row, best_score = r, score
+    if header_row is None or best_score < 2:
+        raise ValueError("Could not locate the Summary header row (expected known column labels "
+                         "like \"Supplier's Name\" and \"Deducted VAT\").")
 
     cols = {}
     for idx, cell in enumerate(ws[header_row]):

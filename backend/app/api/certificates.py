@@ -15,7 +15,6 @@ from ..schemas.certificate import (PendingGroupOut, CertificateOut, GenerateIn, 
                                    BinStatusIn, IssueDateIn, DispatchIn)
 from ..services.certificate_builder import pending_groups, generate_for_supplier, GenerationError
 from ..services.pdf_renderer import render_certificate_pdf
-from ..utils.formatting import dmy, money
 
 router = APIRouter(prefix="/api/certificates", tags=["certificates"])
 
@@ -34,8 +33,8 @@ def _render(db: Session, cert: Certificate) -> str:
     lines = []
     for ln in cert.lines:
         inv = ln.invoice
-        lines.append({"challan": inv.treasury_challan_no or "", "cdate": dmy(inv.treasury_deposit_date),
-                      "inv": inv.invoice_no or "", "idate": dmy(inv.invoice_date),
+        lines.append({"challan": inv.treasury_challan_no or "", "cdate": inv.treasury_deposit_date,
+                      "inv": inv.invoice_no or "", "idate": inv.invoice_date,
                       "value_incl": float(ln.value_incl), "vat": float(ln.vat_amount)})
     path = render_certificate_pdf(cert, issuer, supplier, lines)
     cert.pdf_path = path

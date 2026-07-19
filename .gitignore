@@ -19,8 +19,10 @@ frontend/out/
 # App runtime data
 backend/data/uploads/*
 backend/data/certificates/*
+backend/data/images/*
 !backend/data/uploads/.keep
 !backend/data/certificates/.keep
+!backend/data/images/.keep
 
 # OS / editor
 .DS_Store

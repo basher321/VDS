@@ -167,5 +167,21 @@ def upload_image(issuer_id: int, kind: str, file: UploadFile = File(...),
     return {"path": path}
 
 
+@router.post("/signatures/{sig_id}/upload")
+def upload_signature_image(sig_id: int, file: UploadFile = File(...),
+                           db: Session = Depends(get_db), _=Depends(get_current_user)):
+    sig = db.get(IssuerSignature, sig_id) or _404()
+    settings = get_settings()
+    folder = os.path.join(settings.data_dir, "images")
+    os.makedirs(folder, exist_ok=True)
+    ext = os.path.splitext(file.filename or "")[1] or ".png"
+    path = os.path.join(folder, f"signature{sig_id}{ext}")
+    with open(path, "wb") as f:
+        f.write(file.file.read())
+    sig.image_path = path
+    db.commit()
+    return {"path": path}
+
+
 def _404():
     raise HTTPException(404, "Not found")

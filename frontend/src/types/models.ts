@@ -5,6 +5,7 @@ export interface Issuer {
 }
 export interface Signature {
   id: number; name: string; designation?: string | null; email?: string | null; enabled: boolean;
+  image_path?: string | null;
 }
 export interface Numbering {
   id?: number; issuer_id?: number; company_token: string; fiscal_year_format: string;

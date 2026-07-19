@@ -57,6 +57,7 @@ export default function SettingsPage() {
   async function upload(kind: string, file: File) { await api.uploadImage(form!.id, kind, file); await refreshIssuers(); notify(`${kind} uploaded.`); }
   async function toggleSig(s: Signature) { await api.updateSignature(s.id, { ...s, enabled: !s.enabled }); setSigs(await api.listSignatures(issuerId!)); }
   async function delSig(s: Signature) { if (!confirm(`Delete "${s.name}"?`)) return; await api.deleteSignature(s.id); setSigs(await api.listSignatures(issuerId!)); }
+  async function uploadSig(s: Signature, file: File) { await api.uploadSignatureImage(s.id, file); setSigs(await api.listSignatures(issuerId!)); notify(`Signature image uploaded for ${s.name}.`); }
   async function addSig() {
     if (!nsig.name.trim()) return notify("Enter a signatory name.", "err");
     await api.addSignature(issuerId!, { ...nsig, enabled: true });
@@ -118,6 +119,8 @@ export default function SettingsPage() {
               {s.designation && <div className="muted" style={{ fontSize: 12 }}>{s.designation}</div>}
               {s.email && <div className="muted" style={{ fontSize: 11 }}>{s.email}</div>}</div>
             <label className="chk"><input type="checkbox" checked={s.enabled} onChange={() => toggleSig(s)} /> Enabled</label>
+            <label className="btn btn-ghost btn-sm" style={{ cursor: "pointer" }}>{s.image_path ? "Replace signature image" : "Upload signature image"}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadSig(s, e.target.files[0])} /></label>
             <button className="btn btn-ghost btn-sm" style={{ borderColor: "var(--red-bd)", color: "var(--red-tx)" }} onClick={() => delSig(s)}>Delete</button></li>)}
           {sigs.length === 0 && <li className="muted" style={{ padding: "8px 0", fontSize: 13 }}>No signatures yet.</li>}
         </ul>

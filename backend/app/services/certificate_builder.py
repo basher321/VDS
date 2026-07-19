@@ -50,7 +50,8 @@ def generate_for_supplier(db: Session, issuer_id: int, supplier_id: int,
         raise GenerationError("No staged invoices for this supplier.")
     supplier = db.get(Supplier, supplier_id)
     period = invs[0].fiscal_year
-    cert_no = allocate_number(db, issuer_id, period)
+    month = invs[0].deduction_date.strftime("%B")
+    cert_no = allocate_number(db, issuer_id, period, month)
 
     total_incl = round2(sum(Decimal(str(i.value_incl)) for i in invs))
     total_vat = round2(sum(Decimal(str(i.deducted_vat)) for i in invs))

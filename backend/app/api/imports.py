@@ -39,6 +39,7 @@ def upload(issuer_id: int = Form(...), file: UploadFile = File(...),
     db.add(batch)
     db.flush()
 
+    seen_challans: set[str] = set()
     out_rows, ok, bad = [], 0, 0
     for row in parsed:
         err = validate_import_row(row)
@@ -49,6 +50,13 @@ def upload(issuer_id: int = Form(...), file: UploadFile = File(...),
                 excl, incl = float(d["value_excl"]), float(d["value_incl"])
             except ValueError as ve:
                 err = str(ve)
+
+        challan = row["treasury_challan_no"]
+        if not err and challan:
+            if challan in seen_challans or _challan_already_imported(db, issuer_id, challan):
+                err = f"Treasury challan {challan} was already imported for this issuer."
+            else:
+                seen_challans.add(challan)
 
         if err:
             bad += 1
@@ -78,6 +86,12 @@ def upload(issuer_id: int = Form(...), file: UploadFile = File(...),
 
     return ImportResultOut(batch_id=batch.id, filename=file.filename, total_rows=len(parsed),
                            ok_rows=ok, error_rows=bad, rows=out_rows)
+
+
+def _challan_already_imported(db: Session, issuer_id: int, challan: str) -> bool:
+    return (db.query(Invoice)
+            .filter(Invoice.issuer_id == issuer_id, Invoice.treasury_challan_no == challan)
+            .first() is not None)
 
 
 def _get_or_create_supplier(db: Session, issuer_id: int, row: dict) -> Supplier:

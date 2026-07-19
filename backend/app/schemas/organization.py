@@ -55,6 +55,7 @@ class SignatureOut(ORM):
     designation: str | None = None
     email: str | None = None
     enabled: bool
+    image_path: str | None = None
 
 
 class NumberingIn(BaseModel):

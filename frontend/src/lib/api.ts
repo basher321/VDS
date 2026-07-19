@@ -46,6 +46,10 @@ export const api = {
   addSignature: (id: number, body: any) => req(`/api/issuers/${id}/signatures`, { method: "POST", body: JSON.stringify(body) }),
   updateSignature: (sid: number, body: any) => req(`/api/signatures/${sid}`, { method: "PUT", body: JSON.stringify(body) }),
   deleteSignature: (sid: number) => req(`/api/signatures/${sid}`, { method: "DELETE" }),
+  uploadSignatureImage: (sid: number, file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return req(`/api/signatures/${sid}/upload`, { method: "POST", body: fd });
+  },
   getNumbering: (id: number) => req(`/api/issuers/${id}/numbering`),
   updateNumbering: (id: number, body: any) => req(`/api/issuers/${id}/numbering`, { method: "PUT", body: JSON.stringify(body) }),
   listRates: () => req("/api/rates"),
