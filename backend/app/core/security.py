@@ -1,5 +1,5 @@
 """Password hashing + lightweight signed bearer tokens (local deployment)."""
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from itsdangerous import BadSignature, URLSafeTimedSerializer
 from passlib.context import CryptContext
@@ -30,10 +30,8 @@ def make_token(username: str) -> str:
     return _serializer.dumps({"u": username})
 
 
-def get_current_user(token: str | None = Depends(oauth2), db: Session = Depends(get_db)):
+def _user_from_token(token: str, db: Session):
     from ..models.organization import User  # local import avoids cycles
-    if not token:
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
     try:
         data = _serializer.loads(token, max_age=TOKEN_MAX_AGE)
     except BadSignature:
@@ -42,3 +40,23 @@ def get_current_user(token: str | None = Depends(oauth2), db: Session = Depends(
     if not user or not user.is_active:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "User not found or inactive")
     return user
+
+
+def get_current_user(token: str | None = Depends(oauth2), db: Session = Depends(get_db)):
+    if not token:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+    return _user_from_token(token, db)
+
+
+def get_current_user_flexible(request: Request, token: str | None = Depends(oauth2),
+                              db: Session = Depends(get_db)):
+    """Like get_current_user, but also accepts ?token=... in the query string.
+
+    Browsers can't attach an Authorization header to plain navigation, <a href>,
+    <object data=...>, or window.open() -- so links/embeds that open a PDF directly
+    (as opposed to going through fetch()) have no way to send the bearer token except
+    in the URL itself."""
+    tok = token or request.query_params.get("token")
+    if not tok:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated")
+    return _user_from_token(tok, db)

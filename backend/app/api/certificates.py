@@ -6,7 +6,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
-from ..core.security import get_current_user
+from ..core.security import get_current_user, get_current_user_flexible
 from ..models.certificate import Certificate, CertificateLine, DispatchJob
 from ..models.invoice import Invoice
 from ..models.organization import Issuer, OrgSettings
@@ -80,7 +80,7 @@ def get_cert(cert_id: int, db: Session = Depends(get_db), _=Depends(get_current_
 
 
 @router.get("/{cert_id}/pdf")
-def get_pdf(cert_id: int, db: Session = Depends(get_db), _=Depends(get_current_user)):
+def get_pdf(cert_id: int, db: Session = Depends(get_db), _=Depends(get_current_user_flexible)):
     cert = db.get(Certificate, cert_id) or _404()
     if not cert.pdf_path or not os.path.exists(cert.pdf_path):
         _render(db, cert)

@@ -74,7 +74,14 @@ export const api = {
   generate: (issuerId: number, supplierId: number) =>
     req(`/api/certificates/generate?issuer_id=${issuerId}`, { method: "POST", body: JSON.stringify({ supplier_id: supplierId }) }),
   getCertificate: (id: number) => req(`/api/certificates/${id}`),
-  pdfUrl: (id: number, bust = 0) => `${BASE}/api/certificates/${id}/pdf${bust ? `?t=${bust}` : ""}`,
+  pdfUrl: (id: number, bust = 0) => {
+    const params = new URLSearchParams();
+    const token = getToken();
+    if (token) params.set("token", token);
+    if (bust) params.set("t", String(bust));
+    const qs = params.toString();
+    return `${BASE}/api/certificates/${id}/pdf${qs ? `?${qs}` : ""}`;
+  },
   setRemarks: (id: number, remarks: string) => req(`/api/certificates/${id}/remarks`, { method: "PUT", body: JSON.stringify({ remarks }) }),
   setBinStatus: (id: number, has_bin: boolean) => req(`/api/certificates/${id}/bin-status`, { method: "PUT", body: JSON.stringify({ has_bin }) }),
   setIssueDate: (id: number, mode: string, on_date: string | null) =>
