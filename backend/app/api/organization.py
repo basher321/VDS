@@ -4,13 +4,13 @@ from datetime import date
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from ..core.config import get_settings
 from ..core.database import get_db
 from ..core.security import get_current_user
 from ..models.organization import Issuer, IssuerSignature, NumberingConfig, OrgSettings
 from ..models.rate import VdsRate
 from ..schemas.organization import (IssuerIn, IssuerOut, SignatureIn, SignatureOut,
                                     NumberingIn, NumberingOut, RateIn, RateOut, OrgSettingsIn)
+from ..services import storage
 from ..services.serial_allocator import get_numbering
 
 router = APIRouter(prefix="/api", tags=["settings"])
@@ -154,13 +154,8 @@ def upload_image(issuer_id: int, kind: str, file: UploadFile = File(...),
     if kind not in ("seal", "header", "footer"):
         raise HTTPException(400, "kind must be seal|header|footer")
     issuer = db.get(Issuer, issuer_id) or _404()
-    settings = get_settings()
-    folder = os.path.join(settings.data_dir, "images")
-    os.makedirs(folder, exist_ok=True)
     ext = os.path.splitext(file.filename or "")[1] or ".png"
-    path = os.path.join(folder, f"issuer{issuer_id}_{kind}{ext}")
-    with open(path, "wb") as f:
-        f.write(file.file.read())
+    path = storage.save("images", f"issuer{issuer_id}_{kind}{ext}", file.file.read())
     field = {"seal": "seal_path", "header": "letterhead_header_path", "footer": "letterhead_footer_path"}[kind]
     setattr(issuer, field, path)
     db.commit()
@@ -171,16 +166,10 @@ def upload_image(issuer_id: int, kind: str, file: UploadFile = File(...),
 def upload_signature_image(sig_id: int, file: UploadFile = File(...),
                            db: Session = Depends(get_db), _=Depends(get_current_user)):
     sig = db.get(IssuerSignature, sig_id) or _404()
-    settings = get_settings()
-    folder = os.path.join(settings.data_dir, "images")
-    os.makedirs(folder, exist_ok=True)
     ext = os.path.splitext(file.filename or "")[1] or ".png"
-    path = os.path.join(folder, f"signature{sig_id}{ext}")
-    with open(path, "wb") as f:
-        f.write(file.file.read())
-    sig.image_path = path
+    sig.image_path = storage.save("images", f"signature{sig_id}{ext}", file.file.read())
     db.commit()
-    return {"path": path}
+    return {"path": sig.image_path}
 
 
 def _404():

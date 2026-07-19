@@ -7,6 +7,7 @@ Expected columns (header row on the Summary sheet), matched case-insensitively:
 The base value is DERIVED (VAT / rate), so it need not be present in the file.
 """
 from datetime import date, datetime
+from io import BytesIO
 import openpyxl
 
 # maps a normalized header -> internal field
@@ -57,8 +58,11 @@ def _to_float(v):
         return None
 
 
-def parse_summary(path: str, sheet_name: str = "Summary") -> list[dict]:
-    wb = openpyxl.load_workbook(path, data_only=True)
+def parse_summary(path: str | bytes, sheet_name: str = "Summary") -> list[dict]:
+    """path may be a filesystem path, or the workbook's raw bytes (read in-memory,
+    without ever touching disk -- required on serverless hosts)."""
+    src = BytesIO(path) if isinstance(path, (bytes, bytearray)) else path
+    wb = openpyxl.load_workbook(src, data_only=True)
     ws = wb[sheet_name] if sheet_name in wb.sheetnames else wb[wb.sheetnames[-1]]
 
     # find the header row: the row whose cells match the most known column labels.

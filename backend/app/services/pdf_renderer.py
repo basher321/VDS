@@ -9,6 +9,7 @@ then the Officer-in-Charge signature block with the signatory's scanned signatur
 issuer's seal, name and designation; footnote.
 """
 import os
+from io import BytesIO
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -18,7 +19,7 @@ from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table, Tab
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-from ..core.config import get_settings
+from . import storage
 from ..utils.formatting import money2, dmy, dmy_words, issue_dmy
 
 _ASSETS = os.path.join(os.path.dirname(__file__), "..", "assets", "logo")
@@ -45,7 +46,9 @@ def _P(t, fs=10, al=TA_LEFT, bold=False, lead=None):
     return Paragraph(str(t), ParagraphStyle("x", fontName=fn, fontSize=fs, alignment=al, leading=lead or fs + 2))
 
 
-def _img_or_none(path, w, h):
+def _local_img_or_none(path, w, h):
+    """For assets bundled with the app itself (not user-uploaded) -- always a plain local
+    file next to the code, so it works the same whether storage is local disk or Supabase."""
     if path and os.path.exists(path):
         try:
             return Image(path, width=w, height=h)
@@ -54,25 +57,32 @@ def _img_or_none(path, w, h):
     return None
 
 
-def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
-    """lines: list of dicts {challan, cdate (date|None), inv, idate (date|None), value_incl, vat}."""
-    settings = get_settings()
-    os.makedirs(settings.certificate_dir, exist_ok=True)
-    safe = cert.certificate_no.replace("/", "_").replace("\\", "_")
-    path = os.path.join(settings.certificate_dir, f"{safe}.pdf")
+def _stored_img_or_none(stored_path, w, h):
+    """For user-uploaded images (issuer seal/logo, signatory's signature), fetched through
+    the storage abstraction so this works whether it's on local disk or Supabase Storage."""
+    data = storage.load(stored_path)
+    if not data:
+        return None
+    try:
+        return Image(BytesIO(data), width=w, height=h)
+    except Exception:
+        return None
 
-    doc = SimpleDocTemplate(path, pagesize=A4, topMargin=12 * mm, bottomMargin=15 * mm,
+
+def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
+    """lines: list of dicts {challan, cdate (date|None), inv, idate (date|None), value_incl, vat}.
+    Returns a value to store as cert.pdf_path and pass to storage.load() later."""
+    buf = BytesIO()
+    doc = SimpleDocTemplate(buf, pagesize=A4, topMargin=12 * mm, bottomMargin=15 * mm,
                             leftMargin=14 * mm, rightMargin=10 * mm)
     story = []
 
     # ---- header: national emblem / centred government title / issuer logo ----
-    emblem = _img_or_none(_NATIONAL_EMBLEM, 18 * mm, 19 * mm)
+    emblem = _local_img_or_none(_NATIONAL_EMBLEM, 18 * mm, 19 * mm)
     left_cell = [emblem] if emblem else [_P("", 8)]
 
-    logo_path = issuer.letterhead_header_path
-    if not (logo_path and os.path.exists(logo_path)):
-        logo_path = _DEFAULT_LOGO
-    logo = _img_or_none(logo_path, 24 * mm, 24 * mm)
+    logo = _stored_img_or_none(issuer.letterhead_header_path, 24 * mm, 24 * mm) or \
+        _local_img_or_none(_DEFAULT_LOGO, 24 * mm, 24 * mm)
     right_cell = [_P("Mushak-6.6", 9, TA_RIGHT, bold=True)]
     if logo:
         right_cell += [Spacer(1, 3), logo]
@@ -170,8 +180,8 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
     sig = issuer.signatures[0] if issuer.signatures else None
     sig_name = (sig.name if sig else None) or issuer.officer_name or ""
     sig_desig = (sig.designation if sig else None) or issuer.officer_designation or ""
-    sig_img = _img_or_none(sig.image_path if sig else None, 30 * mm, 15 * mm)
-    seal_img = _img_or_none(issuer.seal_path, 22 * mm, 22 * mm)
+    sig_img = _stored_img_or_none(sig.image_path if sig else None, 30 * mm, 15 * mm)
+    seal_img = _stored_img_or_none(issuer.seal_path, 22 * mm, 22 * mm)
 
     rows = [[_P("Officer-in-Charge", 10, bold=True)], [_P("Signature", 10)]]
     if sig_img or seal_img:
@@ -186,4 +196,5 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
     story += [sig_tbl, Spacer(1, 10), _P("*Price inclusive of VAT and SD (if any).", 10, TA_LEFT)]
 
     doc.build(story)
-    return path
+    safe = cert.certificate_no.replace("/", "_").replace("\\", "_")
+    return storage.save("certificates", f"{safe}.pdf", buf.getvalue())

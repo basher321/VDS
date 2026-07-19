@@ -1,8 +1,6 @@
 """Certificate Issue: pending groups, generate, list, preview edits, dispatch."""
-import os
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
@@ -13,6 +11,7 @@ from ..models.organization import Issuer, OrgSettings
 from ..models.supplier import Supplier, SupplierContact
 from ..schemas.certificate import (PendingGroupOut, CertificateOut, GenerateIn, RemarksIn,
                                    BinStatusIn, IssueDateIn, DispatchIn)
+from ..services import storage
 from ..services.certificate_builder import pending_groups, generate_for_supplier, GenerationError
 from ..services.pdf_renderer import render_certificate_pdf
 
@@ -82,10 +81,13 @@ def get_cert(cert_id: int, db: Session = Depends(get_db), _=Depends(get_current_
 @router.get("/{cert_id}/pdf")
 def get_pdf(cert_id: int, db: Session = Depends(get_db), _=Depends(get_current_user_flexible)):
     cert = db.get(Certificate, cert_id) or _404()
-    if not cert.pdf_path or not os.path.exists(cert.pdf_path):
+    data = storage.load(cert.pdf_path)
+    if data is None:
         _render(db, cert)
-    return FileResponse(cert.pdf_path, media_type="application/pdf",
-                        filename=os.path.basename(cert.pdf_path))
+        data = storage.load(cert.pdf_path)
+    safe = cert.certificate_no.replace("/", "_").replace("\\", "_")
+    return Response(content=data, media_type="application/pdf",
+                    headers={"Content-Disposition": f'inline; filename="{safe}.pdf"'})
 
 
 @router.put("/{cert_id}/remarks", response_model=CertificateOut)

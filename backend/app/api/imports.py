@@ -1,10 +1,8 @@
 """Import module: upload the Mushak-6.6 Summary workbook, validate, stage rows."""
 import json
-import os
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
-from ..core.config import get_settings
 from ..core.database import get_db
 from ..core.security import get_current_user
 from ..models.invoice import ImportBatch, ImportRowError, Invoice
@@ -24,13 +22,9 @@ def upload(issuer_id: int = Form(...), file: UploadFile = File(...),
            db: Session = Depends(get_db), user=Depends(get_current_user)):
     if not (file.filename or "").lower().endswith(".xlsx"):
         raise HTTPException(400, "Only .xlsx workbooks are supported.")
-    settings = get_settings()
-    path = os.path.join(settings.upload_dir, file.filename)
-    with open(path, "wb") as f:
-        f.write(file.file.read())
 
     try:
-        parsed = parse_summary(path)
+        parsed = parse_summary(file.file.read())
     except Exception as e:
         raise HTTPException(400, f"Could not parse the workbook: {e}")
 
