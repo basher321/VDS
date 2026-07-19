@@ -120,17 +120,20 @@ Database on [Supabase](https://supabase.com), backend and frontend as two separa
 
 1. Create a new project at [supabase.com/dashboard/new](https://supabase.com/dashboard/new)
    and set a database password (save it).
-2. Once it's provisioned: **Project Settings → Database → Connection string → URI**. Copy the
-   "Direct connection" string (port `5432`) — it looks like:
-   `postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxx.supabase.co:5432/postgres`
+2. Once it's provisioned: **Project Settings → Database → Connection string**, and switch the
+   connection type dropdown to **Session pooler** (not "Direct connection" — Supabase's direct
+   connections are IPv6-only, which fails to resolve from most external hosts including Render;
+   the Session pooler is IPv4-compatible and works with SQLAlchemy's persistent connections).
+   Copy that string — it looks like:
+   `postgresql://postgres.xxxxxxxxxxxx:[YOUR-PASSWORD]@aws-<n>-<region>.pooler.supabase.com:5432/postgres`
 3. Change the scheme from `postgresql://` to `postgresql+psycopg2://` (this app uses the
    `psycopg2` driver) and fill in your password. This is your production `DATABASE_URL`.
 4. Create the tables and admin user by running the setup script **once**, pointed at Supabase.
    From your machine, with the backend venv active:
    ```
    cd backend
-   # Windows (PowerShell): $env:DATABASE_URL = "postgresql+psycopg2://postgres:...supabase.co:5432/postgres"
-   # macOS/Linux:          export DATABASE_URL="postgresql+psycopg2://postgres:...supabase.co:5432/postgres"
+   # Windows (PowerShell): $env:DATABASE_URL = "postgresql+psycopg2://postgres.xxxx:...@aws-...pooler.supabase.com:5432/postgres"
+   # macOS/Linux:          export DATABASE_URL="postgresql+psycopg2://postgres.xxxx:...@aws-...pooler.supabase.com:5432/postgres"
    python scripts/setup_db.py --password YOUR_OWN_ADMIN_PASSWORD
    ```
    Run this from your own machine rather than pasting the connection string to anyone else —
