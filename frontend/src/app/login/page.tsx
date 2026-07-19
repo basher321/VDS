@@ -2,10 +2,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, setToken } from "@/lib/api";
+import { useApp } from "@/lib/auth";
 import VdsMark from "@/components/VdsMark";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { refreshIssuers } = useApp();
   const [u, setU] = useState("admin");
   const [p, setP] = useState("admin");
   const [err, setErr] = useState<string | null>(null);
@@ -16,6 +18,7 @@ export default function LoginPage() {
     try {
       const res = await api.login(u, p);
       setToken(res.access_token);
+      await refreshIssuers();
       router.replace("/dashboard");
     } catch (e: any) { setErr(e.message || "Login failed"); }
     finally { setBusy(false); }
