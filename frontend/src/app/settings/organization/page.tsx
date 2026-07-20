@@ -13,7 +13,7 @@ const SMTP_PRESETS: Record<string, { smtp_host: string; smtp_port: number }> = {
 };
 
 export default function SettingsPage() {
-  const { issuers, issuerId, refreshIssuers, setIssuer } = useApp();
+  const { issuers, issuerId, refreshIssuers, setIssuer, ready } = useApp();
   const notify = useToast();
   const issuer = issuers.find((i) => i.id === issuerId) || null;
 
@@ -34,6 +34,18 @@ export default function SettingsPage() {
   }, [issuerId]);
   useEffect(() => { api.listRates().then(setRates); api.getOrgSettings().then(setOrg); }, []);
 
+  if (ready && issuers.length === 0) {
+    return (
+      <div className="card p5 space">
+        <h2 className="card-title">Create your first issuer</h2>
+        <p className="muted" style={{ fontSize: 13, margin: 0 }}>No withholding entities exist yet. Add one to continue.</p>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+          <div style={{ flex: 1 }}><label className="label">Issuer name</label>
+            <input className="input" value={newIssuer} onChange={(e) => setNewIssuer(e.target.value)} /></div>
+          <button className="btn btn-primary" onClick={createIssuer}>Create</button></div>
+      </div>
+    );
+  }
   if (!form || !num || !org) return <p className="muted">Loading…</p>;
 
   const setF = (k: keyof Issuer, v: any) => setForm({ ...form, [k]: v });
