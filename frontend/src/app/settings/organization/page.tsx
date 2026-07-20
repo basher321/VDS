@@ -72,6 +72,11 @@ export default function SettingsPage() {
   }
   async function delRate(r: Rate) { await api.deleteRate(r.id); setRates(await api.listRates()); }
   async function saveOrg() { await api.updateOrgSettings(org); notify("Email/WhatsApp settings saved."); }
+  async function resetDb() {
+    await api.resetDatabase();
+    notify("Database reset.", "warn");
+    location.reload();
+  }
 
   return (
     <div className="stack">
@@ -203,7 +208,7 @@ export default function SettingsPage() {
         <p style={{ fontSize: 13, margin: 0, color: "var(--red-tx)" }}>Removes imports, suppliers, certificates, dispatch jobs, rates, issuers, settings, and numbering.</p>
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
           <div style={{ maxWidth: 200 }}><label className="label">Type RESET to confirm</label><input className="input" value={reset} onChange={(e) => setReset(e.target.value)} /></div>
-          <button className="btn btn-danger" disabled={reset !== "RESET"} onClick={() => notify("Database reset endpoint is disabled in this build. Run vds_database.sql to reset.", "warn")}>Reset database</button></div></div>
+          <button className="btn btn-danger" disabled={reset !== "RESET"} onClick={resetDb}>Reset database</button></div></div>
     </div>
   );
 }

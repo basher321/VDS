@@ -8,6 +8,10 @@ from ..core.database import get_db
 from ..core.security import get_current_user
 from ..models.organization import Issuer, IssuerSignature, NumberingConfig, OrgSettings
 from ..models.rate import VdsRate
+from ..models.supplier import Supplier, SupplierContact
+from ..models.certificate import Certificate, CertificateLine, DispatchJob
+from ..models.invoice import ImportBatch, ImportRowError, Invoice
+from ..models.serial import NumberSequence
 from ..schemas.organization import (IssuerIn, IssuerOut, SignatureIn, SignatureOut,
                                     NumberingIn, NumberingOut, RateIn, RateOut, OrgSettingsIn)
 from ..services import storage
@@ -143,6 +147,30 @@ def update_org(body: OrgSettingsIn, db: Session = Depends(get_db), _=Depends(get
         if k in ("smtp_password", "wa_token", "wa_twilio_auth") and not v:
             continue  # keep stored secret
         setattr(org, k, v)
+    db.commit()
+    return {"ok": True}
+
+
+# ---- danger zone: full database reset ----
+@router.post("/admin/reset-database")
+def reset_database(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    """Wipes imports, suppliers, certificates, dispatch jobs, rates, issuers, settings,
+    and numbering -- everything the Settings page's 'Database reset' warns about.
+    Deletes children before parents so it doesn't depend on FK ON DELETE behaviour."""
+    db.query(DispatchJob).delete()
+    db.query(CertificateLine).delete()
+    db.query(Certificate).delete()
+    db.query(ImportRowError).delete()
+    db.query(Invoice).delete()
+    db.query(ImportBatch).delete()
+    db.query(SupplierContact).delete()
+    db.query(Supplier).delete()
+    db.query(VdsRate).delete()
+    db.query(NumberSequence).delete()
+    db.query(IssuerSignature).delete()
+    db.query(NumberingConfig).delete()
+    db.query(Issuer).delete()
+    db.query(OrgSettings).delete()
     db.commit()
     return {"ok": True}
 

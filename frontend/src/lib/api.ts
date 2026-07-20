@@ -58,6 +58,7 @@ export const api = {
   deleteRate: (rid: number) => req(`/api/rates/${rid}`, { method: "DELETE" }),
   getOrgSettings: () => req("/api/org-settings"),
   updateOrgSettings: (body: any) => req("/api/org-settings", { method: "PUT", body: JSON.stringify(body) }),
+  resetDatabase: () => req("/api/admin/reset-database", { method: "POST" }),
   uploadImage: (id: number, kind: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return req(`/api/issuers/${id}/upload/${kind}`, { method: "POST", body: fd });
