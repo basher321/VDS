@@ -191,7 +191,7 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
     else:
         rows.append([Spacer(1, 20)])
     rows += [[_P(sig_name, 10, bold=True)], [_P(sig_desig, 10)]]
-    sig_tbl = Table(rows, colWidths=[85 * mm])
+    sig_tbl = Table(rows, colWidths=[85 * mm], hAlign="LEFT")
     sig_tbl.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0)]))
     story += [sig_tbl, Spacer(1, 10), _P("*Price inclusive of VAT and SD (if any).", 10, TA_LEFT)]
 
