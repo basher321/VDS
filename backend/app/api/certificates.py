@@ -51,10 +51,12 @@ def list_certs(issuer_id: int, bin: str = "", supplier: str = "",
                db: Session = Depends(get_db), _=Depends(get_current_user)):
     q = db.query(Certificate).filter(Certificate.issuer_id == issuer_id)
     rows = q.order_by(Certificate.id.desc()).all()
+    bin_q = bin.strip().lower()
+    supplier_q = supplier.strip().lower()
     def keep(c):
-        if bin and bin.lower() not in (c.supplier.bin or "").lower():
+        if bin_q and bin_q not in str(c.supplier.bin or "").strip().lower():
             return False
-        if supplier and supplier.lower() not in c.supplier.name.lower():
+        if supplier_q and supplier_q not in str(c.supplier.name or "").strip().lower():
             return False
         return True
     return [_cert_out(c) for c in rows if keep(c)]

@@ -164,10 +164,14 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
                 [r(money2(cert.total_value_incl)), r(total_vat_str), ""])
     total_row = len(data) - 1
 
-    cw = [10 * mm, 26 * mm, 15 * mm, 26 * mm, 16 * mm, 16 * mm, 14 * mm, 20 * mm, 17 * mm, 22 * mm]
+    # Column 9 (the withheld-at-source column) is widened to the page's remaining slack so its
+    # three-line header ("Amount of VAT" / "withheld at source" / "(Taka)") wraps exactly on
+    # those phrase boundaries instead of spilling onto a fourth line; its own horizontal padding
+    # is trimmed slightly (only this column) to give the widest phrase enough room at that width.
+    cw = [10 * mm, 26 * mm, 15 * mm, 26 * mm, 16 * mm, 16 * mm, 14 * mm, 20 * mm, 17 * mm, 26 * mm]
     grid = Table(data, colWidths=cw)
     grid.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.6, colors.black), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("GRID", (0, 0), (-1, -1), 0.75, colors.black), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("SPAN", (0, 0), (0, 1)), ("SPAN", (1, 0), (2, 0)), ("SPAN", (3, 0), (4, 0)), ("SPAN", (5, 0), (6, 0)),
         ("SPAN", (7, 0), (7, 1)), ("SPAN", (8, 0), (8, 1)), ("SPAN", (9, 0), (9, 1)),
@@ -175,6 +179,7 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
         ("SPAN", (0, total_row), (6, total_row)),
         ("BACKGROUND", (0, 0), (-1, 1), colors.whitesmoke),
         ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (9, 0), (9, -1), 3), ("RIGHTPADDING", (9, 0), (9, -1), 3),
     ]))
     story += [grid, Spacer(1, 22)]
 
