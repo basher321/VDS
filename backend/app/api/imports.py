@@ -1,6 +1,7 @@
 """Import module: upload the Mushak-6.6 Summary workbook, validate, stage rows."""
 import json
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..core.database import get_db
@@ -89,8 +90,13 @@ def _challan_already_imported(db: Session, issuer_id: int, challan: str) -> bool
 
 
 def _get_or_create_supplier(db: Session, issuer_id: int, row: dict) -> Supplier:
+    # Matched case-/whitespace-insensitively: the same real-world supplier is often typed
+    # with slightly different casing or stray spaces across separate monthly workbooks, and
+    # an exact match would silently fork a second supplier record instead of reusing the one
+    # that already has this supplier's contacts and certificate history.
+    name_key = row["supplier_name"].strip().lower()
     q = (db.query(Supplier)
-         .filter(Supplier.issuer_id == issuer_id, Supplier.name == row["supplier_name"]))
+         .filter(Supplier.issuer_id == issuer_id, func.lower(Supplier.name) == name_key))
     supplier = q.first()
     if supplier:
         if not supplier.bin and row["supplier_bin"]:
