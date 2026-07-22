@@ -152,6 +152,13 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
         data[j_start][9] = _P(narrative_text, 9, TA_LEFT, lead=11)
         extra_spans.append(("SPAN", (9, j_start), (9, j_end)))
         extra_spans.append(("VALIGN", (9, j_start), (9, j_end), "TOP"))
+    else:
+        # with a single line there's no SL 2+ row to merge the narrative beside, so it gets its
+        # own row inside the table (spanning the columns left of the withheld column), exactly
+        # as the template does it -- not a paragraph appended after the table.
+        narrative_row = len(data)
+        data.append([_P(narrative_text, 9, TA_LEFT, lead=11)] + [""] * 8)
+        extra_spans.append(("SPAN", (0, narrative_row), (8, narrative_row)))
 
     data.append([_P("Total", 9, TA_RIGHT, bold=True)] + [""] * 6 +
                 [r(money2(cert.total_value_incl)), r(total_vat_str), ""])
@@ -169,12 +176,7 @@ def render_certificate_pdf(cert, issuer, supplier, lines) -> str:
         ("BACKGROUND", (0, 0), (-1, 1), colors.whitesmoke),
         ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
     ]))
-    story += [grid]
-    if n == 1:
-        # the template only demonstrates this narrative merged beside a 2nd+ line item; with a
-        # single line there's no such row to merge it into, so it's appended as a note instead.
-        story += [Spacer(1, 4), _P(narrative_text, 8, TA_LEFT)]
-    story += [Spacer(1, 22)]
+    story += [grid, Spacer(1, 22)]
 
     # ---- Officer-in-Charge signature block ----
     sig = issuer.signatures[0] if issuer.signatures else None
