@@ -93,6 +93,8 @@ def _get_or_create_supplier(db: Session, issuer_id: int, row: dict) -> Supplier:
          .filter(Supplier.issuer_id == issuer_id, Supplier.name == row["supplier_name"]))
     supplier = q.first()
     if supplier:
+        if not supplier.bin and row["supplier_bin"]:
+            supplier.bin = row["supplier_bin"]
         return supplier
     supplier = Supplier(issuer_id=issuer_id, name=row["supplier_name"],
                         bin=row["supplier_bin"] or None)
